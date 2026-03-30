@@ -367,16 +367,21 @@
 
             tasks.forEach(t => {
                 if (t.status === '已上线') return;
+                // 找出该工作项所有节点中最紧急的一条（逾期优先，逾期天数最多 > 剩余天数最少）
+                let worst = null;
                 const checkDate = (dateStr, type) => {
                     if (!dateStr) return;
                     const diffDays = Math.round((new Date(dateStr).getTime() - todayTime) / (1000 * 3600 * 24));
-                    if (diffDays < 0) risks.push({ task: t.name, type, color: 'text-red-600 bg-red-50 border-red-200', msg: `逾期 ${Math.abs(diffDays)} 天` });
-                    else if (diffDays <= 3) risks.push({ task: t.name, type, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diffDays} 天` });
+                    let candidate = null;
+                    if (diffDays < 0)      candidate = { task: t.name, type, color: 'text-red-600 bg-red-50 border-red-200', msg: `逾期 ${Math.abs(diffDays)} 天`, score: -diffDays + 1000 };
+                    else if (diffDays <= 3) candidate = { task: t.name, type, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diffDays} 天`, score: 3 - diffDays };
+                    if (candidate && (!worst || candidate.score > worst.score)) worst = candidate;
                 };
                 checkDate(t.artDate,    '美术');
                 checkDate(t.devDate,    '开发');
                 checkDate(t.testDate,   '测试');
                 checkDate(t.launchDate, '上线');
+                if (worst) risks.push(worst);
             });
 
             if (risks.length === 0) {
