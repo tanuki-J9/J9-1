@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-30T10:40:52.343Z",
+  "updatedAt": "2026-03-30T11:04:16.473Z",
   "tasks": [
     {
       "id": 1774858008073,
@@ -13,7 +13,8 @@
       "devDate": "2026-03-31",
       "testDate": "2026-03-31",
       "launchDate": "2026-04-01",
-      "notes": ""
+      "notes": "",
+      "docLink": ""
     },
     {
       "id": 1774858134637,
@@ -24,8 +25,8 @@
       "group": "【UGC-造梦星企划0201】制作沟通群（基地）",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612132476121",
       "artDate": "2026-03-30",
-      "devDate": "2026-03-30",
-      "testDate": "2026-03-30",
+      "devDate": "2026-03-31",
+      "testDate": "2026-03-31",
       "launchDate": "2026-04-01",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AcMAxQaUAPACNdoRojb9aQqSQYxy0?scode=AJEAIQdfAAoBoGALYKAcMAxQaUAPA&tab=py35gv"
@@ -38,10 +39,10 @@
       "owner": "我",
       "group": "【UGC】乐盒子-运营&策划需求制作沟通群",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612131354959",
-      "artDate": "",
+      "artDate": "2026-04-17",
       "devDate": "",
       "testDate": "",
-      "launchDate": "",
+      "launchDate": "2026-08-01",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AcMAxQaUAPACN2kxEUFeaTMKzXQ0M?scode=AJEAIQdfAAo9ijmwLUAcMAxQaUAPA&tab=BB08J2"
     },
@@ -53,10 +54,10 @@
       "owner": "我",
       "group": "",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612130954996",
-      "artDate": "",
-      "devDate": "",
-      "testDate": "",
-      "launchDate": "",
+      "artDate": "2026-07-17",
+      "devDate": "2026-07-24",
+      "testDate": "2026-07-31",
+      "launchDate": "2026-08-01",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AVcAOAbwADgCNRFFkY58zRYyfpuXD?scode=AJEAIQdfAAoJMVke0SAcMAxQaUAPA&tab=d8nj5l"
     },
@@ -68,9 +69,9 @@
       "owner": "我",
       "group": "运营活动-【2026tga大赛】需求沟通群",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612130954722",
-      "artDate": "",
-      "devDate": "2026-04-07",
-      "testDate": "2026-04-10",
+      "artDate": "2026-04-07",
+      "devDate": "2026-04-10",
+      "testDate": "2026-04-16",
       "launchDate": "2026-04-17",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AVcAOAbwADgCNgAt25xhBR60Ue7yN?scode=AJEAIQdfAAoOMJzFZWAcMAxQaUAPA&tab=BB08J2"
