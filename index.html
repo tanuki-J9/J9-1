@@ -291,47 +291,39 @@
 
         function getCalendarEvents() {
             const events = [];
-            tasks.forEach(t => {
+            tasks.forEach((t, taskIndex) => {
                 const isDone = t.status === '已上线';
-                // 确定进度条起止：创建日期 → 上线节点（依次取最晚的有效节点作为结束）
                 const createdDate = t.createdDate || t.artDate || t.devDate || t.testDate || t.launchDate;
                 if (!createdDate) return;
 
-                // 结束日期取最晚的节点（含当天，FullCalendar end 需要 +1 天）
                 const endCandidates = [t.artDate, t.devDate, t.testDate, t.launchDate].filter(Boolean);
                 if (!endCandidates.length) return;
-                const endDate = endCandidates.sort().pop();
 
-                // 用节点把整条进度分成若干段，每段不同颜色
-                // 段划分：createdDate~artDate:粉, artDate~devDate:蓝, devDate~testDate:绿, testDate~launchDate:橙
                 const milestones = [
-                    { date: createdDate,   color: '#ec4899' }, // 起点用美术色
-                    { date: t.artDate,     color: '#3b82f6' },
-                    { date: t.devDate,     color: '#10b981' },
-                    { date: t.testDate,    color: '#f59e0b' },
-                    { date: t.launchDate,  color: '#f59e0b' },
+                    { date: createdDate,  color: '#ec4899' },
+                    { date: t.artDate,    color: '#3b82f6' },
+                    { date: t.devDate,    color: '#10b981' },
+                    { date: t.testDate,   color: '#f59e0b' },
+                    { date: t.launchDate, color: '#f59e0b' },
                 ].filter(m => m.date);
 
-                // 去重排序
                 const seen = new Set();
                 const sorted = milestones.filter(m => { if (seen.has(m.date)) return false; seen.add(m.date); return true; })
                     .sort((a, b) => a.date.localeCompare(b.date));
 
-                // 生成分段事件
                 for (let i = 0; i < sorted.length; i++) {
                     const segStart = sorted[i].date;
-                    const segEnd   = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
-                    const segEndExclusive = segEnd === segStart ? dateAddDay(segStart, 1) : segEnd;
-                    // FullCalendar 全天事件 end 是不含的，所以直接用下一段起点即可（段间无缝衔接）
                     const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
                     events.push({
                         id: `${t.id}-${i}`,
-                        title: t.name,                          // 每段都显示任务名称
+                        title: t.name,
                         start: segStart,
                         end: finalEnd,
                         allDay: true,
                         backgroundColor: isDone ? sorted[i].color + '60' : sorted[i].color,
                         borderColor: 'transparent',
+                        // 同一任务的所有分段共享相同 order，保证排在同一行
+                        order: taskIndex,
                         extendedProps: { taskId: t.id, segIndex: i }
                     });
                 }
@@ -350,6 +342,8 @@
                 headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
                 height: 'auto',
                 eventDisplay: 'block',
+                eventOrder: 'order,title',         // 按 order 排序，同一任务同一行
+                dayMaxEvents: false,               // 不折叠，全部展示（避免"+N more"遮盖）
                 dayCellClassNames: function(arg) {
                     const ds = arg.date.getFullYear() + '-' + String(arg.date.getMonth()+1).padStart(2,'0') + '-' + String(arg.date.getDate()).padStart(2,'0');
                     if (holidays2026.includes(ds)) return ['bg-red-50'];
