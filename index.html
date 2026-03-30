@@ -328,6 +328,14 @@
         function createTaskCard(task) {
             const pColor = task.priority === 'P0' ? 'bg-red-100 text-red-700' : 
                            task.priority === 'P1' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700';
+            const tapdBtn = task.link
+                ? `<a href="${task.link}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors border border-indigo-200">
+                       <span>📋</span><span>TAPD</span>
+                   </a>`
+                : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无链接">
+                       <span>📋</span><span>TAPD</span>
+                   </span>`;
             return `
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative group">
                     <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block transition-colors">✏️</button>
@@ -338,7 +346,8 @@
                         </select>
                     </div>
                     <h4 class="font-bold text-slate-800 text-sm mb-1">${task.name}</h4>
-                    <p class="text-xs text-slate-500 mb-3 truncate">👤 ${task.owner} | 💬 ${task.group || '无'}</p>
+                    <p class="text-xs text-slate-500 mb-2 truncate">👤 ${task.owner} | 💬 ${task.group || '无'}</p>
+                    <div class="mb-2">${tapdBtn}</div>
                     <div class="text-[11px] space-y-1 text-slate-600 border-t pt-2 mt-2">
                         ${task.artDate    ? `<div class="flex justify-between"><span>🎨 美术:</span> <span>${task.artDate}</span></div>` : ''}
                         ${task.devDate    ? `<div class="flex justify-between"><span>💻 开发:</span> <span>${task.devDate}</span></div>` : ''}
