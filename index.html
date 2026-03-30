@@ -16,8 +16,13 @@
         .fc .fc-button-primary { background-color: #3b82f6; border-color: #3b82f6; }
         .fc .fc-button-primary:hover { background-color: #2563eb; border-color: #2563eb; }
         .fc-daygrid-day-top { flex-direction: row !important; padding: 2px 4px; }
-        /* 让跨天条形事件更好看 */
         .fc-daygrid-event-harness { margin-top: 2px !important; }
+        /* 拖拽卡片样式 */
+        .kanban-card { transition: box-shadow 0.15s, opacity 0.15s; }
+        .kanban-card.dragging { opacity: 0.5; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+        .kanban-col-drop.drag-over { background: #dbeafe; outline: 2px dashed #3b82f6; outline-offset: -4px; }
+        /* 节假日提示 */
+        .holiday-warn { color: #dc2626; font-size: 0.7rem; margin-top: 2px; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans p-6">
@@ -28,6 +33,9 @@
             <p class="text-sm text-slate-500 mt-1">全局视野 / 节点追踪 / 节假日排期避坑</p>
         </div>
         <div class="flex items-center space-x-3">
+            <button onclick="pullFromGithub()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg shadow-md font-medium transition-colors flex items-center space-x-2">
+                <span>⬇️</span><span>从 GitHub 载入</span>
+            </button>
             <button onclick="syncToGithub()" class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-2 rounded-lg shadow-md font-medium transition-colors flex items-center space-x-2">
                 <span>☁️</span><span>同步到 GitHub</span>
             </button>
@@ -75,22 +83,22 @@
     <h2 class="text-2xl font-bold text-slate-900 mb-4">📌 工作流看板</h2>
     <div class="flex space-x-4 overflow-x-auto pb-4" id="kanbanBoard"></div>
 
-    <!-- 同步弹窗 -->
+    <!-- GitHub 同步弹窗 -->
     <div id="syncModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-xl font-bold">☁️ 同步到 GitHub</h3>
+                <h3 class="text-xl font-bold" id="syncModalTitle">☁️ 同步到 GitHub</h3>
                 <button type="button" onclick="closeSyncModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl">&times;</button>
             </div>
-            <p class="text-sm text-slate-500 mb-4">将任务数据推送到 GitHub 仓库，供 AI 读取用于风险预警监控。Token 仅存储在本地浏览器，不会上传。</p>
+            <p class="text-sm text-slate-500 mb-4" id="syncModalDesc">将任务数据推送到 GitHub 仓库。Token 仅存储在本地浏览器，不会上传。</p>
             <div>
                 <label class="block text-sm font-medium mb-1">GitHub Token</label>
                 <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                <p class="text-xs text-slate-400 mt-1">需要 repo 写权限，仅存本地不上传</p>
+                <p class="text-xs text-slate-400 mt-1">需要 repo 读写权限，仅存本地不上传</p>
             </div>
             <div class="flex justify-end space-x-3 mt-5">
                 <button type="button" onclick="closeSyncModal()" class="px-4 py-2 border rounded-lg hover:bg-slate-50 text-sm">取消</button>
-                <button type="button" onclick="doSync()" class="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm">开始同步</button>
+                <button type="button" id="syncActionBtn" onclick="doSync()" class="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm">开始同步</button>
             </div>
             <div id="syncStatus" class="mt-3 text-sm hidden"></div>
         </div>
@@ -145,21 +153,26 @@
                     <label class="block text-sm font-medium mb-1">📄 活动文档</label>
                     <input type="url" id="tDocLink" class="w-full border rounded-lg px-3 py-2" placeholder="https://...">
                 </div>
+                <!-- 节点日期 + 节假日提示 -->
                 <div>
                     <label class="block text-sm font-medium mb-1">🎨 美术节点</label>
-                    <input type="date" id="tArtDate" class="w-full border rounded-lg px-3 py-2">
+                    <input type="date" id="tArtDate" oninput="checkHoliday('tArtDate','artWarn')" class="w-full border rounded-lg px-3 py-2">
+                    <div id="artWarn" class="holiday-warn hidden"></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">💻 开发节点</label>
-                    <input type="date" id="tDevDate" class="w-full border rounded-lg px-3 py-2">
+                    <input type="date" id="tDevDate" oninput="checkHoliday('tDevDate','devWarn')" class="w-full border rounded-lg px-3 py-2">
+                    <div id="devWarn" class="holiday-warn hidden"></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">🐛 测试节点</label>
-                    <input type="date" id="tTestDate" class="w-full border rounded-lg px-3 py-2">
+                    <input type="date" id="tTestDate" oninput="checkHoliday('tTestDate','testWarn')" class="w-full border rounded-lg px-3 py-2">
+                    <div id="testWarn" class="holiday-warn hidden"></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">🚀 上线节点</label>
-                    <input type="date" id="tLaunchDate" class="w-full border rounded-lg px-3 py-2">
+                    <input type="date" id="tLaunchDate" oninput="checkHoliday('tLaunchDate','launchWarn')" class="w-full border rounded-lg px-3 py-2">
+                    <div id="launchWarn" class="holiday-warn hidden"></div>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-medium mb-1">备注</label>
@@ -176,24 +189,69 @@
         </div>
     </div>
 
+    <!-- 节点完成确认弹窗（优化7）-->
+    <div id="completeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold mb-2" id="completeModalTitle">✅ 记录实际完成日期</h3>
+            <p class="text-sm text-slate-500 mb-4" id="completeModalDesc"></p>
+            <input type="date" id="completeDate" class="w-full border rounded-lg px-3 py-2 mb-4">
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeCompleteModal(false)" class="px-4 py-2 border rounded-lg hover:bg-slate-50 text-sm">跳过</button>
+                <button onclick="closeCompleteModal(true)" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">确认</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // ── 数据层 ──────────────────────────────────────────
+        // ── 常量 ────────────────────────────────────────────
         const COLUMNS = ["未开始", "美术中", "开发中", "测试中", "阻塞中", "已上线"];
 
-        // 节点顺序与颜色配置
-        const NODE_SEGMENTS = [
-            { key: 'artDate',    label: '美术', color: '#ec4899' },
-            { key: 'devDate',    label: '开发', color: '#3b82f6' },
-            { key: 'testDate',   label: '测试', color: '#10b981' },
-            { key: 'launchDate', label: '上线', color: '#f59e0b' },
-        ];
+        // 状态推进顺序映射
+        const STATUS_TO_NODE = { '美术中': 'artDate', '开发中': 'devDate', '测试中': 'testDate', '已上线': 'launchDate' };
+        const NODE_LABELS    = { artDate: '美术', devDate: '开发', testDate: '测试', launchDate: '上线' };
 
+        // 节假日数据
+        const holidays2026 = new Set([
+            "2026-01-01","2026-01-02","2026-01-03",
+            "2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-23",
+            "2026-04-04","2026-04-05","2026-04-06",
+            "2026-05-01","2026-05-02","2026-05-03","2026-05-04","2026-05-05",
+            "2026-06-19","2026-06-20","2026-06-21",
+            "2026-09-25","2026-09-26","2026-09-27",
+            "2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07"
+        ]);
+        const workdays2026 = new Set(["2026-01-04","2026-02-14","2026-02-28","2026-05-09","2026-09-20","2026-10-10"]);
+
+        function isHoliday(dateStr) {
+            if (!dateStr) return false;
+            if (holidays2026.has(dateStr)) return '法定节假日';
+            if (workdays2026.has(dateStr)) return false; // 补班日是工作日
+            const d = new Date(dateStr);
+            const day = d.getDay();
+            if (day === 0 || day === 6) return '周末';
+            return false;
+        }
+
+        // ── 数据层 ──────────────────────────────────────────
         let tasks = JSON.parse(localStorage.getItem('pm_tasks')) || [];
         let memos = JSON.parse(localStorage.getItem('pm_memos')) || [];
         let showDoneMemos = false;
 
         function saveData()  { localStorage.setItem('pm_tasks', JSON.stringify(tasks)); }
         function saveMemos() { localStorage.setItem('pm_memos', JSON.stringify(memos)); }
+
+        // ── 节假日提示（优化3）──────────────────────────────
+        function checkHoliday(inputId, warnId) {
+            const val  = document.getElementById(inputId).value;
+            const warn = document.getElementById(warnId);
+            const type = isHoliday(val);
+            if (type) {
+                warn.textContent = `⚠️ ${val} 是${type}，建议顺延至工作日`;
+                warn.classList.remove('hidden');
+            } else {
+                warn.classList.add('hidden');
+            }
+        }
 
         // ── 备忘录 ──────────────────────────────────────────
         function addMemo() {
@@ -234,30 +292,42 @@
             `).join('');
         }
 
-        // ── 节假日 ──────────────────────────────────────────
-        const holidays2026 = [
-            "2026-01-01","2026-01-02","2026-01-03",
-            "2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-23",
-            "2026-04-04","2026-04-05","2026-04-06",
-            "2026-05-01","2026-05-02","2026-05-03","2026-05-04","2026-05-05",
-            "2026-06-19","2026-06-20","2026-06-21",
-            "2026-09-25","2026-09-26","2026-09-27",
-            "2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07"
-        ];
-        const workdays2026 = ["2026-01-04","2026-02-14","2026-02-28","2026-05-09","2026-09-20","2026-10-10"];
-
         // ── GitHub 同步 ──────────────────────────────────────
+        let syncMode = 'push'; // 'push' | 'pull'
+
         function syncToGithub() {
-            document.getElementById('syncModal').classList.remove('hidden');
+            syncMode = 'push';
+            document.getElementById('syncModalTitle').textContent = '☁️ 同步到 GitHub';
+            document.getElementById('syncModalDesc').textContent = '将任务数据推送到 GitHub 仓库。Token 仅存储在本地浏览器，不会上传。';
+            document.getElementById('syncActionBtn').textContent = '开始同步';
+            document.getElementById('syncActionBtn').className = 'px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 text-sm';
+            openSyncModal();
+        }
+        function pullFromGithub() {
+            syncMode = 'pull';
+            document.getElementById('syncModalTitle').textContent = '⬇️ 从 GitHub 载入';
+            document.getElementById('syncModalDesc').textContent = '从 GitHub 拉取最新数据覆盖本地，可用于多设备同步。Token 仅存本地。';
+            document.getElementById('syncActionBtn').textContent = '开始载入';
+            document.getElementById('syncActionBtn').className = 'px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm';
+            openSyncModal();
+        }
+        function openSyncModal() {
             const saved = localStorage.getItem('gh_token');
             if (saved) document.getElementById('ghToken').value = saved;
             document.getElementById('syncStatus').classList.add('hidden');
+            document.getElementById('syncModal').classList.remove('hidden');
         }
         function closeSyncModal() { document.getElementById('syncModal').classList.add('hidden'); }
+
         async function doSync() {
             const token = document.getElementById('ghToken').value.trim();
             if (!token) { showSyncStatus('❌ 请输入 GitHub Token', 'text-red-600'); return; }
             localStorage.setItem('gh_token', token);
+            if (syncMode === 'push') await doPush(token);
+            else await doPull(token);
+        }
+
+        async function doPush(token) {
             const owner = 'tanuki-J9', repo = 'J9-1', path = 'data.json';
             showSyncStatus('⏳ 同步中...', 'text-slate-500');
             try {
@@ -277,12 +347,34 @@
                 else { const e = await res.json(); showSyncStatus(`❌ 同步失败: ${e.message}`, 'text-red-600'); }
             } catch(e) { showSyncStatus(`❌ 网络错误: ${e.message}`, 'text-red-600'); }
         }
+
+        async function doPull(token) {
+            const owner = 'tanuki-J9', repo = 'J9-1', path = 'data.json';
+            showSyncStatus('⏳ 载入中...', 'text-slate-500');
+            try {
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+                });
+                if (!res.ok) { const e = await res.json(); showSyncStatus(`❌ 载入失败: ${e.message}`, 'text-red-600'); return; }
+                const data = await res.json();
+                const json = JSON.parse(decodeURIComponent(escape(atob(data.content.replace(/\n/g,'')))));
+                if (json.tasks) {
+                    tasks = json.tasks;
+                    saveData();
+                    updateDashboard();
+                    showSyncStatus(`✅ 载入成功！共 ${tasks.length} 条任务（更新于 ${json.updatedAt ? json.updatedAt.slice(0,16).replace('T',' ') : '未知'}）`, 'text-green-600');
+                } else {
+                    showSyncStatus('❌ 数据格式不正确', 'text-red-600');
+                }
+            } catch(e) { showSyncStatus(`❌ 错误: ${e.message}`, 'text-red-600'); }
+        }
+
         function showSyncStatus(msg, cls) {
             const el = document.getElementById('syncStatus');
             el.className = `mt-3 text-sm ${cls}`; el.textContent = msg; el.classList.remove('hidden');
         }
 
-        // ── 日历事件生成（跨天条形，每工作项一条） ────────────
+        // ── 日历事件生成 ─────────────────────────────────────
         function dateAddDay(dateStr, n) {
             const d = new Date(dateStr);
             d.setDate(d.getDate() + n);
@@ -295,7 +387,6 @@
                 const isDone = t.status === '已上线';
                 const createdDate = t.createdDate || t.artDate || t.devDate || t.testDate || t.launchDate;
                 if (!createdDate) return;
-
                 const endCandidates = [t.artDate, t.devDate, t.testDate, t.launchDate].filter(Boolean);
                 if (!endCandidates.length) return;
 
@@ -311,7 +402,6 @@
                 const sorted = milestones.filter(m => { if (seen.has(m.date)) return false; seen.add(m.date); return true; })
                     .sort((a, b) => a.date.localeCompare(b.date));
 
-                // 阶段标签
                 const segLabels = ['美术', '开发', '测试', '上线'];
                 const segDates  = [t.artDate, t.devDate, t.testDate, t.launchDate];
 
@@ -319,17 +409,13 @@
                     const segStart = sorted[i].date;
                     const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
 
-                    // 找出这段对应的节点名称和日期（取距 segStart 最近的节点）
                     let nodeLabel = '', nodeDate = '';
                     segDates.forEach((d, idx) => {
                         if (d && d >= segStart && (!nodeDate || d < nodeDate)) {
-                            nodeDate  = d;
-                            nodeLabel = segLabels[idx];
+                            nodeDate = d; nodeLabel = segLabels[idx];
                         }
                     });
-                    const titleStr = nodeLabel
-                        ? `${t.name}（${nodeLabel} ${nodeDate}）`
-                        : `${t.name}（${segStart}）`;
+                    const titleStr = nodeLabel ? `${t.name}（${nodeLabel} ${nodeDate}）` : `${t.name}（${segStart}）`;
 
                     events.push({
                         id: `${t.id}-${i}`,
@@ -347,9 +433,8 @@
             return events;
         }
 
-        // ── 视图渲染 ────────────────────────────────────────
+        // ── 日历初始化 ───────────────────────────────────────
         let calendar;
-
         function initViews() {
             renderMemos();
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -358,20 +443,20 @@
                 headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
                 height: 'auto',
                 eventDisplay: 'block',
-                eventOrder: 'order,title',         // 按 order 排序，同一任务同一行
-                dayMaxEvents: false,               // 不折叠，全部展示（避免"+N more"遮盖）
+                eventOrder: 'order,title',
+                dayMaxEvents: false,
                 dayCellClassNames: function(arg) {
-                    const ds = arg.date.getFullYear() + '-' + String(arg.date.getMonth()+1).padStart(2,'0') + '-' + String(arg.date.getDate()).padStart(2,'0');
-                    if (holidays2026.includes(ds)) return ['bg-red-50'];
-                    if (workdays2026.includes(ds)) return ['bg-white'];
+                    const ds = fmtDate(arg.date);
+                    if (holidays2026.has(ds)) return ['bg-red-50'];
+                    if (workdays2026.has(ds)) return ['bg-white'];
                     if (arg.date.getDay() === 0 || arg.date.getDay() === 6) return ['bg-slate-100'];
                     return [];
                 },
                 dayCellContent: function(arg) {
-                    const ds = arg.date.getFullYear() + '-' + String(arg.date.getMonth()+1).padStart(2,'0') + '-' + String(arg.date.getDate()).padStart(2,'0');
+                    const ds = fmtDate(arg.date);
                     let badge = '';
-                    if (holidays2026.includes(ds)) badge = `<span class="text-[10px] text-red-600 bg-red-100 px-1 rounded">休</span>`;
-                    else if (workdays2026.includes(ds)) badge = `<span class="text-[10px] text-slate-600 bg-slate-200 px-1 rounded">班</span>`;
+                    if (holidays2026.has(ds)) badge = `<span class="text-[10px] text-red-600 bg-red-100 px-1 rounded">休</span>`;
+                    else if (workdays2026.has(ds)) badge = `<span class="text-[10px] text-slate-600 bg-slate-200 px-1 rounded">班</span>`;
                     return { html: `<div class="w-full flex justify-between items-center">${arg.dayNumberText}${badge}</div>` };
                 },
                 events: getCalendarEvents(),
@@ -379,6 +464,10 @@
             });
             calendar.render();
             updateDashboard();
+        }
+
+        function fmtDate(d) {
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         }
 
         function updateDashboard() {
@@ -389,20 +478,53 @@
             updateRiskList();
         }
 
-        // ── 看板 ────────────────────────────────────────────
+        // ── 看板（优化1：拖拽换列）──────────────────────────
         function renderKanban() {
             const board = document.getElementById('kanbanBoard');
             board.innerHTML = '';
             COLUMNS.forEach(col => {
                 const colTasks = tasks.filter(t => t.status === col);
-                board.innerHTML += `
-                    <div class="flex-none w-80 bg-slate-200/50 rounded-xl p-3 kanban-col">
-                        <div class="flex justify-between items-center mb-3 px-1">
-                            <h3 class="font-bold text-slate-700">${col}</h3>
-                            <span class="bg-slate-300 text-slate-700 text-xs px-2 py-1 rounded-full">${colTasks.length}</span>
-                        </div>
-                        <div class="space-y-3">${colTasks.map(createTaskCard).join('')}</div>
-                    </div>`;
+                const colEl = document.createElement('div');
+                colEl.className = 'flex-none w-80 bg-slate-200/50 rounded-xl p-3 kanban-col kanban-col-drop';
+                colEl.dataset.col = col;
+                colEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h3 class="font-bold text-slate-700">${col}</h3>
+                        <span class="bg-slate-300 text-slate-700 text-xs px-2 py-1 rounded-full">${colTasks.length}</span>
+                    </div>
+                    <div class="space-y-3 cards-container">${colTasks.map(createTaskCard).join('')}</div>`;
+
+                // 拖拽放置事件
+                colEl.addEventListener('dragover', e => { e.preventDefault(); colEl.classList.add('drag-over'); });
+                colEl.addEventListener('dragleave', () => colEl.classList.remove('drag-over'));
+                colEl.addEventListener('drop', e => {
+                    e.preventDefault();
+                    colEl.classList.remove('drag-over');
+                    const taskId = parseInt(e.dataTransfer.getData('taskId'));
+                    const newStatus = colEl.dataset.col;
+                    const task = tasks.find(t => t.id === taskId);
+                    if (task && task.status !== newStatus) {
+                        const prevStatus = task.status;
+                        task.status = newStatus;
+                        // 优化7：状态推进到对应节点时弹窗记录实际完成日
+                        const nodeKey = STATUS_TO_NODE[newStatus];
+                        if (nodeKey && ['美术中','开发中','测试中','已上线'].includes(newStatus)) {
+                            showCompleteModal(task, prevStatus, newStatus, nodeKey);
+                        } else {
+                            saveAndRender();
+                        }
+                    }
+                });
+                board.appendChild(colEl);
+            });
+
+            // 给所有卡片绑定拖拽事件
+            document.querySelectorAll('.kanban-card').forEach(card => {
+                card.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('taskId', card.dataset.id);
+                    card.classList.add('dragging');
+                });
+                card.addEventListener('dragend', () => card.classList.remove('dragging'));
             });
         }
 
@@ -414,17 +536,24 @@
                 ? `<a href="${task.link}" target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors border border-indigo-200">
                        <span>📋</span><span>TAPD</span></a>`
-                : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无链接">
-                       <span>📋</span><span>TAPD</span></span>`;
+                : `<span class="inline-flex items-center text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">
+                       <span>📋</span><span class="ml-1">TAPD</span></span>`;
             const docBtn = task.docLink
                 ? `<a href="${task.docLink}" target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200">
                        <span>📄</span><span>活动文档</span></a>`
-                : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无文档">
-                       <span>📄</span><span>活动文档</span></span>`;
+                : `<span class="inline-flex items-center text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">
+                       <span>📄</span><span class="ml-1">活动文档</span></span>`;
+
+            // 节点完成历史
+            const historyHtml = task.completedNodes && task.completedNodes.length
+                ? `<div class="text-[10px] text-slate-400 mt-1 border-t pt-1">${task.completedNodes.map(h => `✓ ${h.label} 实际 ${h.actual}`).join(' · ')}</div>`
+                : '';
+
             return `
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative group">
-                    <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block">✏️</button>
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative group kanban-card"
+                     draggable="true" data-id="${task.id}">
+                    <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block z-10">✏️</button>
                     <div class="flex justify-between items-start mb-2 pr-6">
                         <span class="text-xs font-bold px-2 py-0.5 rounded ${pColor}">${task.priority}</span>
                         <select onchange="changeStatus(${task.id}, this.value)" class="text-xs border-none bg-slate-50 rounded cursor-pointer outline-none">
@@ -441,6 +570,7 @@
                         ${task.testDate     ? `<div class="flex justify-between"><span>🐛 测试:</span><span>${task.testDate}</span></div>` : ''}
                         ${task.launchDate   ? `<div class="flex justify-between"><span>🚀 上线:</span><span>${task.launchDate}</span></div>` : ''}
                     </div>
+                    ${historyHtml}
                 </div>`;
         }
 
@@ -450,24 +580,19 @@
             let risks = [];
             const todayTime = new Date(new Date().toISOString().split('T')[0]).getTime();
 
+            const statusNodeStart = { '美术中': 0, '开发中': 1, '测试中': 2, '未开始': 0, '阻塞中': 0 };
+            const nodes = [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']];
+
             tasks.forEach(t => {
                 if (t.status === '已上线') return;
-
-                // 根据当前状态确定从哪个节点开始检查
-                // 美术中→只看美术及之后；开发中→只看开发及之后；测试中→只看测试及之后；未开始/阻塞中→全部检查
-                const statusNodeStart = {
-                    '美术中': 0, '开发中': 1, '测试中': 2, '未开始': 0, '阻塞中': 0
-                };
                 const startIdx = statusNodeStart[t.status] ?? 0;
-                const nodes = [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']];
-
                 let worst = null;
                 nodes.slice(startIdx).forEach(([key, label]) => {
                     if (!t[key]) return;
                     const diff = Math.round((new Date(t[key]).getTime() - todayTime) / 86400000);
                     let c;
-                    if (diff < 0)      c = { task: t.name, type: label, color: 'text-red-600 bg-red-50 border-red-200',       msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 1000 };
-                    else if (diff <= 3) c = { task: t.name, type: label, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diff} 天`,           score: 3 - diff };
+                    if (diff < 0)      c = { task: t.name, type: label, color: 'text-red-600 bg-red-50 border-red-200',         msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 1000 };
+                    else if (diff <= 3) c = { task: t.name, type: label, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diff} 天`,             score: 3 - diff };
                     if (c && (!worst || c.score > worst.score)) worst = c;
                 });
                 if (worst) risks.push(worst);
@@ -484,33 +609,75 @@
                 </div>`).join('');
         }
 
+        // ── 优化7：节点完成确认弹窗 ──────────────────────────
+        let _pendingCompleteTask = null, _pendingCompleteNodeKey = null;
+
+        function showCompleteModal(task, prevStatus, newStatus, nodeKey) {
+            _pendingCompleteTask = task;
+            _pendingCompleteNodeKey = nodeKey;
+            const label = NODE_LABELS[nodeKey] || nodeKey;
+            document.getElementById('completeModalTitle').textContent = `✅ ${label}节点完成确认`;
+            document.getElementById('completeModalDesc').textContent = `「${task.name}」进入${newStatus}，请记录${label}阶段实际完成日期（可跳过）`;
+            document.getElementById('completeDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('completeModal').classList.remove('hidden');
+        }
+
+        function closeCompleteModal(confirm) {
+            document.getElementById('completeModal').classList.add('hidden');
+            if (confirm && _pendingCompleteTask) {
+                const actual = document.getElementById('completeDate').value;
+                const label  = NODE_LABELS[_pendingCompleteNodeKey] || _pendingCompleteNodeKey;
+                if (!_pendingCompleteTask.completedNodes) _pendingCompleteTask.completedNodes = [];
+                // 去重更新
+                const existing = _pendingCompleteTask.completedNodes.findIndex(h => h.key === _pendingCompleteNodeKey);
+                const entry = { key: _pendingCompleteNodeKey, label, actual };
+                if (existing > -1) _pendingCompleteTask.completedNodes[existing] = entry;
+                else _pendingCompleteTask.completedNodes.push(entry);
+            }
+            _pendingCompleteTask = null;
+            _pendingCompleteNodeKey = null;
+            saveAndRender();
+        }
+
         // ── 任务 CRUD ────────────────────────────────────────
         function changeStatus(id, newStatus) {
-            const t = tasks.find(t => t.id === id);
-            if (t) { t.status = newStatus; saveAndRender(); }
+            const task = tasks.find(t => t.id === id);
+            if (!task || task.status === newStatus) return;
+            task.status = newStatus;
+            const nodeKey = STATUS_TO_NODE[newStatus];
+            if (nodeKey) {
+                showCompleteModal(task, task.status, newStatus, nodeKey);
+            } else {
+                saveAndRender();
+            }
         }
 
         function openModal(id = null) {
             document.getElementById('taskForm').reset();
+            ['artWarn','devWarn','testWarn','launchWarn'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('tId').value = '';
             if (id) {
                 const t = tasks.find(t => t.id === id);
                 if (t) {
-                    document.getElementById('modalTitle').innerText = '编辑工作项';
-                    document.getElementById('tId').value        = t.id;
-                    document.getElementById('tName').value      = t.name;
-                    document.getElementById('tPriority').value  = t.priority;
-                    document.getElementById('tStatus').value    = t.status;
-                    document.getElementById('tOwner').value     = t.owner;
-                    document.getElementById('tGroup').value     = t.group     || '';
-                    document.getElementById('tLink').value      = t.link      || '';
-                    document.getElementById('tDocLink').value   = t.docLink   || '';
-                    document.getElementById('tArtDate').value   = t.artDate   || '';
-                    document.getElementById('tDevDate').value   = t.devDate   || '';
-                    document.getElementById('tTestDate').value  = t.testDate  || '';
-                    document.getElementById('tLaunchDate').value= t.launchDate|| '';
-                    document.getElementById('tNotes').value     = t.notes     || '';
+                    document.getElementById('modalTitle').innerText   = '编辑工作项';
+                    document.getElementById('tId').value              = t.id;
+                    document.getElementById('tName').value            = t.name;
+                    document.getElementById('tPriority').value        = t.priority;
+                    document.getElementById('tStatus').value          = t.status;
+                    document.getElementById('tOwner').value           = t.owner;
+                    document.getElementById('tGroup').value           = t.group      || '';
+                    document.getElementById('tLink').value            = t.link       || '';
+                    document.getElementById('tDocLink').value         = t.docLink    || '';
+                    document.getElementById('tArtDate').value         = t.artDate    || '';
+                    document.getElementById('tDevDate').value         = t.devDate    || '';
+                    document.getElementById('tTestDate').value        = t.testDate   || '';
+                    document.getElementById('tLaunchDate').value      = t.launchDate || '';
+                    document.getElementById('tNotes').value           = t.notes      || '';
                     document.getElementById('deleteBtn').classList.remove('hidden');
+                    // 重新触发节假日检查
+                    ['tArtDate','tDevDate','tTestDate','tLaunchDate'].forEach((fId, i) => {
+                        checkHoliday(fId, ['artWarn','devWarn','testWarn','launchWarn'][i]);
+                    });
                 }
             } else {
                 document.getElementById('modalTitle').innerText = '新增工作项';
@@ -542,7 +709,6 @@
                 const idx = tasks.findIndex(t => t.id == editId);
                 if (idx > -1) tasks[idx] = { ...tasks[idx], ...taskData };
             } else {
-                // 新建时自动记录今天作为创建日期
                 const today = new Date().toISOString().split('T')[0];
                 tasks.push({ id: Date.now(), createdDate: today, ...taskData });
             }
