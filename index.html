@@ -311,18 +311,34 @@
                 const sorted = milestones.filter(m => { if (seen.has(m.date)) return false; seen.add(m.date); return true; })
                     .sort((a, b) => a.date.localeCompare(b.date));
 
+                // 阶段标签
+                const segLabels = ['美术', '开发', '测试', '上线'];
+                const segDates  = [t.artDate, t.devDate, t.testDate, t.launchDate];
+
                 for (let i = 0; i < sorted.length; i++) {
                     const segStart = sorted[i].date;
                     const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
+
+                    // 找出这段对应的节点名称和日期（取距 segStart 最近的节点）
+                    let nodeLabel = '', nodeDate = '';
+                    segDates.forEach((d, idx) => {
+                        if (d && d >= segStart && (!nodeDate || d < nodeDate)) {
+                            nodeDate  = d;
+                            nodeLabel = segLabels[idx];
+                        }
+                    });
+                    const titleStr = nodeLabel
+                        ? `${t.name}（${nodeLabel} ${nodeDate}）`
+                        : `${t.name}（${segStart}）`;
+
                     events.push({
                         id: `${t.id}-${i}`,
-                        title: t.name,
+                        title: titleStr,
                         start: segStart,
                         end: finalEnd,
                         allDay: true,
                         backgroundColor: isDone ? sorted[i].color + '60' : sorted[i].color,
                         borderColor: 'transparent',
-                        // 同一任务的所有分段共享相同 order，保证排在同一行
                         order: taskIndex,
                         extendedProps: { taskId: t.id, segIndex: i }
                     });
