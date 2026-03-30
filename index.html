@@ -452,8 +452,17 @@
 
             tasks.forEach(t => {
                 if (t.status === '已上线') return;
+
+                // 根据当前状态确定从哪个节点开始检查
+                // 美术中→只看美术及之后；开发中→只看开发及之后；测试中→只看测试及之后；未开始/阻塞中→全部检查
+                const statusNodeStart = {
+                    '美术中': 0, '开发中': 1, '测试中': 2, '未开始': 0, '阻塞中': 0
+                };
+                const startIdx = statusNodeStart[t.status] ?? 0;
+                const nodes = [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']];
+
                 let worst = null;
-                [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']].forEach(([key, label]) => {
+                nodes.slice(startIdx).forEach(([key, label]) => {
                     if (!t[key]) return;
                     const diff = Math.round((new Date(t[key]).getTime() - todayTime) / 86400000);
                     let c;
