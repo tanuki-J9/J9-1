@@ -322,7 +322,7 @@
                     const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
                     events.push({
                         id: `${t.id}-${i}`,
-                        title: i === 0 ? t.name : '',           // 只在第一段显示名称
+                        title: t.name,                          // 每段都显示任务名称
                         start: segStart,
                         end: finalEnd,
                         allDay: true,
