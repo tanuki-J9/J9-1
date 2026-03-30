@@ -11,11 +11,13 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         .kanban-col { min-height: 400px; }
-        .fc-event { cursor: pointer; border-radius: 4px; padding: 2px 4px; border: none !important; font-size: 0.75rem; }
+        .fc-event { cursor: pointer; border-radius: 4px; padding: 2px 6px; border: none !important; font-size: 0.72rem; }
         .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: bold; color: #0f172a; }
         .fc .fc-button-primary { background-color: #3b82f6; border-color: #3b82f6; }
         .fc .fc-button-primary:hover { background-color: #2563eb; border-color: #2563eb; }
         .fc-daygrid-day-top { flex-direction: row !important; padding: 2px 4px; }
+        /* 让跨天条形事件更好看 */
+        .fc-daygrid-event-harness { margin-top: 2px !important; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans p-6">
@@ -26,7 +28,7 @@
             <p class="text-sm text-slate-500 mt-1">全局视野 / 节点追踪 / 节假日排期避坑</p>
         </div>
         <div class="flex items-center space-x-3">
-            <button onclick="syncToGithub()" id="syncBtn" class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-2 rounded-lg shadow-md font-medium transition-colors flex items-center space-x-2">
+            <button onclick="syncToGithub()" class="bg-slate-700 hover:bg-slate-800 text-white px-5 py-2 rounded-lg shadow-md font-medium transition-colors flex items-center space-x-2">
                 <span>☁️</span><span>同步到 GitHub</span>
             </button>
             <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md font-medium transition-colors">
@@ -36,6 +38,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- 备忘录 -->
         <div class="bg-white p-5 rounded-xl shadow-sm flex flex-col">
             <div class="flex justify-between items-center border-b pb-2 mb-3">
                 <h2 class="text-lg font-semibold">📝 备忘录</h2>
@@ -55,21 +58,24 @@
             </div>
             <div id="memoList" class="flex-1 overflow-y-auto space-y-1.5" style="max-height:200px;"></div>
         </div>
+        <!-- 风险预警 -->
         <div class="bg-white p-5 rounded-xl shadow-sm flex flex-col">
             <h2 class="text-lg font-semibold border-b pb-2 mb-2">节点风险预警 (近3天)</h2>
             <div id="riskList" class="flex-1 overflow-y-auto space-y-3 mt-2"></div>
         </div>
     </div>
 
+    <!-- 节点日历 -->
     <div class="bg-white p-5 rounded-xl shadow-sm mb-8">
         <h2 class="text-lg font-semibold border-b pb-2 mb-4">📅 节点日历 (带2026中国法定休假)</h2>
         <div id="calendar" style="min-height: 500px;"></div>
     </div>
 
+    <!-- 看板 -->
     <h2 class="text-2xl font-bold text-slate-900 mb-4">📌 工作流看板</h2>
     <div class="flex space-x-4 overflow-x-auto pb-4" id="kanbanBoard"></div>
 
-    <!-- 同步配置弹窗 -->
+    <!-- 同步弹窗 -->
     <div id="syncModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
@@ -77,12 +83,10 @@
                 <button type="button" onclick="closeSyncModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl">&times;</button>
             </div>
             <p class="text-sm text-slate-500 mb-4">将任务数据推送到 GitHub 仓库，供 AI 读取用于风险预警监控。Token 仅存储在本地浏览器，不会上传。</p>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-sm font-medium mb-1">GitHub Token</label>
-                    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
-                    <p class="text-xs text-slate-400 mt-1">需要 repo 写权限，仅存本地不上传</p>
-                </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">GitHub Token</label>
+                <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                <p class="text-xs text-slate-400 mt-1">需要 repo 写权限，仅存本地不上传</p>
             </div>
             <div class="flex justify-end space-x-3 mt-5">
                 <button type="button" onclick="closeSyncModal()" class="px-4 py-2 border rounded-lg hover:bg-slate-50 text-sm">取消</button>
@@ -92,7 +96,7 @@
         </div>
     </div>
 
-    <!-- 任务编辑弹窗 -->
+    <!-- 任务弹窗 -->
     <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-3 mb-4">
@@ -169,48 +173,50 @@
     </div>
 
     <script>
-        // --- 数据层 (LocalStorage) ---
+        // ── 数据层 ──────────────────────────────────────────
         const COLUMNS = ["未开始", "美术中", "开发中", "测试中", "阻塞中", "已上线"];
+
+        // 节点顺序与颜色配置
+        const NODE_SEGMENTS = [
+            { key: 'artDate',    label: '美术', color: '#ec4899' },
+            { key: 'devDate',    label: '开发', color: '#3b82f6' },
+            { key: 'testDate',   label: '测试', color: '#10b981' },
+            { key: 'launchDate', label: '上线', color: '#f59e0b' },
+        ];
+
         let tasks = JSON.parse(localStorage.getItem('pm_tasks')) || [];
         let memos = JSON.parse(localStorage.getItem('pm_memos')) || [];
         let showDoneMemos = false;
 
+        function saveData()  { localStorage.setItem('pm_tasks', JSON.stringify(tasks)); }
         function saveMemos() { localStorage.setItem('pm_memos', JSON.stringify(memos)); }
 
+        // ── 备忘录 ──────────────────────────────────────────
         function addMemo() {
             const input = document.getElementById('memoInput');
             const text = input.value.trim();
             if (!text) return;
             memos.unshift({ id: Date.now(), text, done: false });
             input.value = '';
-            saveMemos();
-            renderMemos();
+            saveMemos(); renderMemos();
         }
-
         function toggleMemoDone(id) {
             const m = memos.find(m => m.id === id);
             if (m) { m.done = !m.done; saveMemos(); renderMemos(); }
         }
-
         function deleteMemo(id) {
             memos = memos.filter(m => m.id !== id);
-            saveMemos();
-            renderMemos();
+            saveMemos(); renderMemos();
         }
-
         function toggleDoneMemos() {
             showDoneMemos = !showDoneMemos;
             document.getElementById('toggleDoneBtn').textContent = showDoneMemos ? '隐藏已完成' : '显示已完成';
             renderMemos();
         }
-
         function renderMemos() {
             const list = document.getElementById('memoList');
-            const visible = memos.filter(m => showDoneMemos ? true : !m.done);
-            if (visible.length === 0) {
-                list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">暂无备忘</p>';
-                return;
-            }
+            const visible = memos.filter(m => showDoneMemos || !m.done);
+            if (!visible.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">暂无备忘</p>'; return; }
             list.innerHTML = visible.map(m => `
                 <div class="flex items-center space-x-2 group px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors ${m.done ? 'opacity-50' : ''}">
                     <button onclick="toggleMemoDone(${m.id})"
@@ -219,29 +225,24 @@
                         ${m.done ? '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
                     </button>
                     <span class="flex-1 text-sm ${m.done ? 'line-through text-slate-400' : 'text-slate-700'}">${m.text}</span>
-                    <button onclick="deleteMemo(${m.id})"
-                        class="flex-none text-slate-200 hover:text-red-400 hidden group-hover:block transition-colors text-xs">✕</button>
+                    <button onclick="deleteMemo(${m.id})" class="flex-none text-slate-200 hover:text-red-400 hidden group-hover:block text-xs">✕</button>
                 </div>
             `).join('');
         }
 
-        // 2026年 中国法定节假日及调休数据
+        // ── 节假日 ──────────────────────────────────────────
         const holidays2026 = [
-            "2026-01-01", "2026-01-02", "2026-01-03",
-            "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23",
-            "2026-04-04", "2026-04-05", "2026-04-06",
-            "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05",
-            "2026-06-19", "2026-06-20", "2026-06-21",
-            "2026-09-25", "2026-09-26", "2026-09-27",
-            "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07"
+            "2026-01-01","2026-01-02","2026-01-03",
+            "2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-23",
+            "2026-04-04","2026-04-05","2026-04-06",
+            "2026-05-01","2026-05-02","2026-05-03","2026-05-04","2026-05-05",
+            "2026-06-19","2026-06-20","2026-06-21",
+            "2026-09-25","2026-09-26","2026-09-27",
+            "2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07"
         ];
-        const workdays2026 = [
-            "2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10"
-        ];
+        const workdays2026 = ["2026-01-04","2026-02-14","2026-02-28","2026-05-09","2026-09-20","2026-10-10"];
 
-        function saveData() { localStorage.setItem('pm_tasks', JSON.stringify(tasks)); }
-
-        // --- GitHub 同步 ---
+        // ── GitHub 同步 ──────────────────────────────────────
         function syncToGithub() {
             document.getElementById('syncModal').classList.remove('hidden');
             const saved = localStorage.getItem('gh_token');
@@ -249,244 +250,243 @@
             document.getElementById('syncStatus').classList.add('hidden');
         }
         function closeSyncModal() { document.getElementById('syncModal').classList.add('hidden'); }
-
         async function doSync() {
             const token = document.getElementById('ghToken').value.trim();
             if (!token) { showSyncStatus('❌ 请输入 GitHub Token', 'text-red-600'); return; }
             localStorage.setItem('gh_token', token);
-
             const owner = 'tanuki-J9', repo = 'J9-1', path = 'data.json';
             showSyncStatus('⏳ 同步中...', 'text-slate-500');
-
             try {
-                // 获取现有文件 sha（如有）
                 let sha = '';
-                const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                const chk = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
                     headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
                 });
-                if (checkRes.ok) { const d = await checkRes.json(); sha = d.sha; }
-
-                const content = btoa(unescape(encodeURIComponent(JSON.stringify({
-                    updatedAt: new Date().toISOString(),
-                    tasks: tasks
-                }, null, 2))));
-
+                if (chk.ok) { const d = await chk.json(); sha = d.sha; }
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify({ updatedAt: new Date().toISOString(), tasks }, null, 2))));
                 const body = { message: `sync: update tasks data ${new Date().toISOString()}`, content };
                 if (sha) body.sha = sha;
-
                 const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-                    method: 'PUT',
-                    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+                    method: 'PUT', headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
-
-                if (res.ok) {
-                    showSyncStatus(`✅ 同步成功！共 ${tasks.length} 条任务已推送到 GitHub`, 'text-green-600');
-                } else {
-                    const err = await res.json();
-                    showSyncStatus(`❌ 同步失败: ${err.message}`, 'text-red-600');
-                }
-            } catch(e) {
-                showSyncStatus(`❌ 网络错误: ${e.message}`, 'text-red-600');
-            }
+                if (res.ok) showSyncStatus(`✅ 同步成功！共 ${tasks.length} 条任务`, 'text-green-600');
+                else { const e = await res.json(); showSyncStatus(`❌ 同步失败: ${e.message}`, 'text-red-600'); }
+            } catch(e) { showSyncStatus(`❌ 网络错误: ${e.message}`, 'text-red-600'); }
         }
-
         function showSyncStatus(msg, cls) {
             const el = document.getElementById('syncStatus');
-            el.className = `mt-3 text-sm ${cls}`;
-            el.textContent = msg;
-            el.classList.remove('hidden');
+            el.className = `mt-3 text-sm ${cls}`; el.textContent = msg; el.classList.remove('hidden');
         }
 
-        // --- 视图渲染 ---
+        // ── 日历事件生成（跨天条形，每工作项一条） ────────────
+        function dateAddDay(dateStr, n) {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() + n);
+            return d.toISOString().split('T')[0];
+        }
+
+        function getCalendarEvents() {
+            const events = [];
+            tasks.forEach(t => {
+                const isDone = t.status === '已上线';
+                // 确定进度条起止：创建日期 → 上线节点（依次取最晚的有效节点作为结束）
+                const createdDate = t.createdDate || t.artDate || t.devDate || t.testDate || t.launchDate;
+                if (!createdDate) return;
+
+                // 结束日期取最晚的节点（含当天，FullCalendar end 需要 +1 天）
+                const endCandidates = [t.artDate, t.devDate, t.testDate, t.launchDate].filter(Boolean);
+                if (!endCandidates.length) return;
+                const endDate = endCandidates.sort().pop();
+
+                // 用节点把整条进度分成若干段，每段不同颜色
+                // 段划分：createdDate~artDate:粉, artDate~devDate:蓝, devDate~testDate:绿, testDate~launchDate:橙
+                const milestones = [
+                    { date: createdDate,   color: '#ec4899' }, // 起点用美术色
+                    { date: t.artDate,     color: '#3b82f6' },
+                    { date: t.devDate,     color: '#10b981' },
+                    { date: t.testDate,    color: '#f59e0b' },
+                    { date: t.launchDate,  color: '#f59e0b' },
+                ].filter(m => m.date);
+
+                // 去重排序
+                const seen = new Set();
+                const sorted = milestones.filter(m => { if (seen.has(m.date)) return false; seen.add(m.date); return true; })
+                    .sort((a, b) => a.date.localeCompare(b.date));
+
+                // 生成分段事件
+                for (let i = 0; i < sorted.length; i++) {
+                    const segStart = sorted[i].date;
+                    const segEnd   = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
+                    const segEndExclusive = segEnd === segStart ? dateAddDay(segStart, 1) : segEnd;
+                    // FullCalendar 全天事件 end 是不含的，所以直接用下一段起点即可（段间无缝衔接）
+                    const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
+                    events.push({
+                        id: `${t.id}-${i}`,
+                        title: i === 0 ? t.name : '',           // 只在第一段显示名称
+                        start: segStart,
+                        end: finalEnd,
+                        allDay: true,
+                        backgroundColor: isDone ? sorted[i].color + '60' : sorted[i].color,
+                        borderColor: 'transparent',
+                        extendedProps: { taskId: t.id, segIndex: i }
+                    });
+                }
+            });
+            return events;
+        }
+
+        // ── 视图渲染 ────────────────────────────────────────
         let calendar;
 
         function initViews() {
             renderMemos();
-            
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth',
                 locale: 'zh-cn',
                 headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
                 height: 'auto',
+                eventDisplay: 'block',
                 dayCellClassNames: function(arg) {
-                    const d = arg.date;
-                    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-                    if (holidays2026.includes(dateStr)) return ['bg-red-50'];
-                    if (workdays2026.includes(dateStr)) return ['bg-white'];
-                    if (d.getDay() === 0 || d.getDay() === 6) return ['bg-slate-100'];
+                    const ds = arg.date.getFullYear() + '-' + String(arg.date.getMonth()+1).padStart(2,'0') + '-' + String(arg.date.getDate()).padStart(2,'0');
+                    if (holidays2026.includes(ds)) return ['bg-red-50'];
+                    if (workdays2026.includes(ds)) return ['bg-white'];
+                    if (arg.date.getDay() === 0 || arg.date.getDay() === 6) return ['bg-slate-100'];
                     return [];
                 },
                 dayCellContent: function(arg) {
-                    const d = arg.date;
-                    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                    const ds = arg.date.getFullYear() + '-' + String(arg.date.getMonth()+1).padStart(2,'0') + '-' + String(arg.date.getDate()).padStart(2,'0');
                     let badge = '';
-                    if (holidays2026.includes(dateStr)) {
-                        badge = `<span class="text-[10px] text-red-600 bg-red-100 px-1 rounded">休</span>`;
-                    } else if (workdays2026.includes(dateStr)) {
-                        badge = `<span class="text-[10px] text-slate-600 bg-slate-200 px-1 rounded">班</span>`;
-                    }
+                    if (holidays2026.includes(ds)) badge = `<span class="text-[10px] text-red-600 bg-red-100 px-1 rounded">休</span>`;
+                    else if (workdays2026.includes(ds)) badge = `<span class="text-[10px] text-slate-600 bg-slate-200 px-1 rounded">班</span>`;
                     return { html: `<div class="w-full flex justify-between items-center">${arg.dayNumberText}${badge}</div>` };
                 },
                 events: getCalendarEvents(),
-                eventOrder: 'sortOrder,title',
-                eventClick: function(info) { openModal(parseInt(info.event.id)); }
+                eventClick: function(info) { openModal(parseInt(info.event.extendedProps.taskId)); }
             });
             calendar.render();
             updateDashboard();
         }
 
-        function getCalendarEvents() {
-            let events = [];
-            tasks.forEach(t => {
-                const isDone = t.status === '已上线';
-                const opacityColor = (hex) => isDone ? hex + '80' : hex;
-                // 顺序：美术 → 开发 → 测试 → 上线
-                if(t.artDate)    events.push({ id: t.id, title: '🎨 ' + t.name, start: t.artDate,    backgroundColor: opacityColor('#ec4899'), extendedProps: { sortOrder: 1 } });
-                if(t.devDate)    events.push({ id: t.id, title: '💻 ' + t.name, start: t.devDate,    backgroundColor: opacityColor('#3b82f6'), extendedProps: { sortOrder: 2 } });
-                if(t.testDate)   events.push({ id: t.id, title: '🐛 ' + t.name, start: t.testDate,   backgroundColor: opacityColor('#10b981'), extendedProps: { sortOrder: 3 } });
-                if(t.launchDate) events.push({ id: t.id, title: '🚀 ' + t.name, start: t.launchDate, backgroundColor: opacityColor('#f59e0b'), extendedProps: { sortOrder: 4 } });
-            });
-            return events;
-        }
-
         function updateDashboard() {
             renderMemos();
-
             calendar.removeAllEvents();
             calendar.addEventSource(getCalendarEvents());
             renderKanban();
             updateRiskList();
         }
 
+        // ── 看板 ────────────────────────────────────────────
         function renderKanban() {
             const board = document.getElementById('kanbanBoard');
             board.innerHTML = '';
             COLUMNS.forEach(col => {
                 const colTasks = tasks.filter(t => t.status === col);
-                const colHTML = `
+                board.innerHTML += `
                     <div class="flex-none w-80 bg-slate-200/50 rounded-xl p-3 kanban-col">
                         <div class="flex justify-between items-center mb-3 px-1">
                             <h3 class="font-bold text-slate-700">${col}</h3>
                             <span class="bg-slate-300 text-slate-700 text-xs px-2 py-1 rounded-full">${colTasks.length}</span>
                         </div>
-                        <div class="space-y-3">
-                            ${colTasks.map(t => createTaskCard(t)).join('')}
-                        </div>
-                    </div>
-                `;
-                board.innerHTML += colHTML;
+                        <div class="space-y-3">${colTasks.map(createTaskCard).join('')}</div>
+                    </div>`;
             });
         }
 
         function createTaskCard(task) {
-            const pColor = task.priority === 'P0' ? 'bg-red-100 text-red-700' : 
-                           task.priority === 'P1' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700';
+            const pColor = task.priority === 'P0' ? 'bg-red-100 text-red-700'
+                         : task.priority === 'P1' ? 'bg-orange-100 text-orange-700'
+                         : 'bg-blue-100 text-blue-700';
             const tapdBtn = task.link
                 ? `<a href="${task.link}" target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors border border-indigo-200">
-                       <span>📋</span><span>TAPD</span>
-                   </a>`
+                       <span>📋</span><span>TAPD</span></a>`
                 : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无链接">
-                       <span>📋</span><span>TAPD</span>
-                   </span>`;
+                       <span>📋</span><span>TAPD</span></span>`;
             return `
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative group">
-                    <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block transition-colors">✏️</button>
+                    <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block">✏️</button>
                     <div class="flex justify-between items-start mb-2 pr-6">
                         <span class="text-xs font-bold px-2 py-0.5 rounded ${pColor}">${task.priority}</span>
                         <select onchange="changeStatus(${task.id}, this.value)" class="text-xs border-none bg-slate-50 rounded cursor-pointer outline-none">
-                            ${COLUMNS.map(c => `<option value="${c}" ${task.status === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            ${COLUMNS.map(c => `<option value="${c}" ${task.status===c?'selected':''}>${c}</option>`).join('')}
                         </select>
                     </div>
                     <h4 class="font-bold text-slate-800 text-sm mb-1">${task.name}</h4>
-                    <p class="text-xs text-slate-500 mb-2 truncate">👤 ${task.owner} | 💬 ${task.group || '无'}</p>
+                    <p class="text-xs text-slate-500 mb-2 truncate">👤 ${task.owner} | 💬 ${task.group||'无'}</p>
                     <div class="mb-2">${tapdBtn}</div>
                     <div class="text-[11px] space-y-1 text-slate-600 border-t pt-2 mt-2">
-                        ${task.artDate    ? `<div class="flex justify-between"><span>🎨 美术:</span> <span>${task.artDate}</span></div>` : ''}
-                        ${task.devDate    ? `<div class="flex justify-between"><span>💻 开发:</span> <span>${task.devDate}</span></div>` : ''}
-                        ${task.testDate   ? `<div class="flex justify-between"><span>🐛 测试:</span> <span>${task.testDate}</span></div>` : ''}
-                        ${task.launchDate ? `<div class="flex justify-between"><span>🚀 上线:</span> <span>${task.launchDate}</span></div>` : ''}
+                        ${task.createdDate  ? `<div class="flex justify-between"><span>📅 创建:</span><span>${task.createdDate}</span></div>` : ''}
+                        ${task.artDate      ? `<div class="flex justify-between"><span>🎨 美术:</span><span>${task.artDate}</span></div>` : ''}
+                        ${task.devDate      ? `<div class="flex justify-between"><span>💻 开发:</span><span>${task.devDate}</span></div>` : ''}
+                        ${task.testDate     ? `<div class="flex justify-between"><span>🐛 测试:</span><span>${task.testDate}</span></div>` : ''}
+                        ${task.launchDate   ? `<div class="flex justify-between"><span>🚀 上线:</span><span>${task.launchDate}</span></div>` : ''}
                     </div>
-                </div>
-            `;
+                </div>`;
         }
 
+        // ── 风险预警 ─────────────────────────────────────────
         function updateRiskList() {
             const riskContainer = document.getElementById('riskList');
-            riskContainer.innerHTML = '';
             let risks = [];
-            const todayStr = new Date().toISOString().split('T')[0];
-            const todayTime = new Date(todayStr).getTime();
+            const todayTime = new Date(new Date().toISOString().split('T')[0]).getTime();
 
             tasks.forEach(t => {
                 if (t.status === '已上线') return;
-                // 找出该工作项所有节点中最紧急的一条（逾期优先，逾期天数最多 > 剩余天数最少）
                 let worst = null;
-                const checkDate = (dateStr, type) => {
-                    if (!dateStr) return;
-                    const diffDays = Math.round((new Date(dateStr).getTime() - todayTime) / (1000 * 3600 * 24));
-                    let candidate = null;
-                    if (diffDays < 0)      candidate = { task: t.name, type, color: 'text-red-600 bg-red-50 border-red-200', msg: `逾期 ${Math.abs(diffDays)} 天`, score: -diffDays + 1000 };
-                    else if (diffDays <= 3) candidate = { task: t.name, type, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diffDays} 天`, score: 3 - diffDays };
-                    if (candidate && (!worst || candidate.score > worst.score)) worst = candidate;
-                };
-                checkDate(t.artDate,    '美术');
-                checkDate(t.devDate,    '开发');
-                checkDate(t.testDate,   '测试');
-                checkDate(t.launchDate, '上线');
+                [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']].forEach(([key, label]) => {
+                    if (!t[key]) return;
+                    const diff = Math.round((new Date(t[key]).getTime() - todayTime) / 86400000);
+                    let c;
+                    if (diff < 0)      c = { task: t.name, type: label, color: 'text-red-600 bg-red-50 border-red-200',       msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 1000 };
+                    else if (diff <= 3) c = { task: t.name, type: label, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diff} 天`,           score: 3 - diff };
+                    if (c && (!worst || c.score > worst.score)) worst = c;
+                });
                 if (worst) risks.push(worst);
             });
 
-            if (risks.length === 0) {
+            if (!risks.length) {
                 riskContainer.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4">✅ 近三天节点安全</p>';
                 return;
             }
-
-            risks.forEach(r => {
-                riskContainer.innerHTML += `
-                    <div class="text-sm p-2 rounded border ${r.color} flex justify-between items-center">
-                        <span class="font-medium truncate pr-2">【${r.type}】${r.task}</span>
-                        <span class="font-bold text-xs whitespace-nowrap">${r.msg}</span>
-                    </div>
-                `;
-            });
+            riskContainer.innerHTML = risks.map(r => `
+                <div class="text-sm p-2 rounded border ${r.color} flex justify-between items-center">
+                    <span class="font-medium truncate pr-2">【${r.type}】${r.task}</span>
+                    <span class="font-bold text-xs whitespace-nowrap">${r.msg}</span>
+                </div>`).join('');
         }
 
+        // ── 任务 CRUD ────────────────────────────────────────
         function changeStatus(id, newStatus) {
-            const task = tasks.find(t => t.id === id);
-            if(task) { task.status = newStatus; saveAndRender(); }
+            const t = tasks.find(t => t.id === id);
+            if (t) { t.status = newStatus; saveAndRender(); }
         }
 
-        function openModal(id = null) { 
-            const modal = document.getElementById('taskModal');
-            const form = document.getElementById('taskForm');
+        function openModal(id = null) {
+            document.getElementById('taskForm').reset();
             document.getElementById('tId').value = '';
-            form.reset();
-            
             if (id) {
-                const task = tasks.find(t => t.id === id);
-                if (task) {
-                    document.getElementById('modalTitle').innerText = "编辑工作项";
-                    document.getElementById('tId').value = task.id;
-                    document.getElementById('tName').value = task.name;
-                    document.getElementById('tPriority').value = task.priority;
-                    document.getElementById('tStatus').value = task.status;
-                    document.getElementById('tOwner').value = task.owner;
-                    document.getElementById('tGroup').value = task.group || '';
-                    document.getElementById('tLink').value = task.link || '';
-                    document.getElementById('tArtDate').value = task.artDate || '';
-                    document.getElementById('tDevDate').value = task.devDate || '';
-                    document.getElementById('tTestDate').value = task.testDate || '';
-                    document.getElementById('tLaunchDate').value = task.launchDate || '';
-                    document.getElementById('tNotes').value = task.notes || '';
+                const t = tasks.find(t => t.id === id);
+                if (t) {
+                    document.getElementById('modalTitle').innerText = '编辑工作项';
+                    document.getElementById('tId').value        = t.id;
+                    document.getElementById('tName').value      = t.name;
+                    document.getElementById('tPriority').value  = t.priority;
+                    document.getElementById('tStatus').value    = t.status;
+                    document.getElementById('tOwner').value     = t.owner;
+                    document.getElementById('tGroup').value     = t.group     || '';
+                    document.getElementById('tLink').value      = t.link      || '';
+                    document.getElementById('tArtDate').value   = t.artDate   || '';
+                    document.getElementById('tDevDate').value   = t.devDate   || '';
+                    document.getElementById('tTestDate').value  = t.testDate  || '';
+                    document.getElementById('tLaunchDate').value= t.launchDate|| '';
+                    document.getElementById('tNotes').value     = t.notes     || '';
                     document.getElementById('deleteBtn').classList.remove('hidden');
                 }
             } else {
-                document.getElementById('modalTitle').innerText = "新增工作项";
+                document.getElementById('modalTitle').innerText = '新增工作项';
                 document.getElementById('deleteBtn').classList.add('hidden');
             }
-            modal.classList.remove('hidden'); 
+            document.getElementById('taskModal').classList.remove('hidden');
         }
 
         function closeModal() { document.getElementById('taskModal').classList.add('hidden'); }
@@ -495,43 +495,40 @@
             e.preventDefault();
             const editId = document.getElementById('tId').value;
             const taskData = {
-                name: document.getElementById('tName').value,
-                priority: document.getElementById('tPriority').value,
-                status: document.getElementById('tStatus').value,
-                owner: document.getElementById('tOwner').value,
-                group: document.getElementById('tGroup').value,
-                link: document.getElementById('tLink').value,
-                artDate: document.getElementById('tArtDate').value,
-                devDate: document.getElementById('tDevDate').value,
-                testDate: document.getElementById('tTestDate').value,
+                name:       document.getElementById('tName').value,
+                priority:   document.getElementById('tPriority').value,
+                status:     document.getElementById('tStatus').value,
+                owner:      document.getElementById('tOwner').value,
+                group:      document.getElementById('tGroup').value,
+                link:       document.getElementById('tLink').value,
+                artDate:    document.getElementById('tArtDate').value,
+                devDate:    document.getElementById('tDevDate').value,
+                testDate:   document.getElementById('tTestDate').value,
                 launchDate: document.getElementById('tLaunchDate').value,
-                notes: document.getElementById('tNotes').value
+                notes:      document.getElementById('tNotes').value,
             };
-
             if (editId) {
-                const index = tasks.findIndex(t => t.id == editId);
-                if(index > -1) tasks[index] = { ...tasks[index], ...taskData };
+                const idx = tasks.findIndex(t => t.id == editId);
+                if (idx > -1) tasks[idx] = { ...tasks[idx], ...taskData };
             } else {
-                tasks.push({ id: Date.now(), ...taskData });
+                // 新建时自动记录今天作为创建日期
+                const today = new Date().toISOString().split('T')[0];
+                tasks.push({ id: Date.now(), createdDate: today, ...taskData });
             }
-            closeModal();
-            saveAndRender();
+            closeModal(); saveAndRender();
         }
 
         function deleteTask() {
             const editId = document.getElementById('tId').value;
             if (editId && confirm('确定要删除这个工作项吗？')) {
                 tasks = tasks.filter(t => t.id != editId);
-                closeModal();
-                saveAndRender();
+                closeModal(); saveAndRender();
             }
         }
 
         function saveAndRender() { saveData(); updateDashboard(); }
 
-        window.onload = () => {
-            initViews();
-        };
+        window.onload = () => { initViews(); };
     </script>
 </body>
 </html>
