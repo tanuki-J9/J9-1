@@ -137,9 +137,13 @@
                     <label class="block text-sm font-medium mb-1">群聊名称</label>
                     <input type="text" id="tGroup" class="w-full border rounded-lg px-3 py-2">
                 </div>
-                <div class="col-span-2">
-                    <label class="block text-sm font-medium mb-1">相关链接</label>
+                <div>
+                    <label class="block text-sm font-medium mb-1">相关链接 (TAPD)</label>
                     <input type="url" id="tLink" class="w-full border rounded-lg px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">📄 活动文档</label>
+                    <input type="url" id="tDocLink" class="w-full border rounded-lg px-3 py-2" placeholder="https://...">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1">🎨 美术节点</label>
@@ -402,6 +406,12 @@
                        <span>📋</span><span>TAPD</span></a>`
                 : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无链接">
                        <span>📋</span><span>TAPD</span></span>`;
+            const docBtn = task.docLink
+                ? `<a href="${task.docLink}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center space-x-1 text-[11px] font-medium px-2 py-1 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200">
+                       <span>📄</span><span>活动文档</span></a>`
+                : `<span class="inline-flex items-center space-x-1 text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" title="暂无文档">
+                       <span>📄</span><span>活动文档</span></span>`;
             return `
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative group">
                     <button onclick="openModal(${task.id})" class="absolute top-3 right-3 text-slate-300 hover:text-blue-500 hidden group-hover:block">✏️</button>
@@ -413,7 +423,7 @@
                     </div>
                     <h4 class="font-bold text-slate-800 text-sm mb-1">${task.name}</h4>
                     <p class="text-xs text-slate-500 mb-2 truncate">👤 ${task.owner} | 💬 ${task.group||'无'}</p>
-                    <div class="mb-2">${tapdBtn}</div>
+                    <div class="mb-2 flex space-x-2">${tapdBtn}${docBtn}</div>
                     <div class="text-[11px] space-y-1 text-slate-600 border-t pt-2 mt-2">
                         ${task.createdDate  ? `<div class="flex justify-between"><span>📅 创建:</span><span>${task.createdDate}</span></div>` : ''}
                         ${task.artDate      ? `<div class="flex justify-between"><span>🎨 美术:</span><span>${task.artDate}</span></div>` : ''}
@@ -475,6 +485,7 @@
                     document.getElementById('tOwner').value     = t.owner;
                     document.getElementById('tGroup').value     = t.group     || '';
                     document.getElementById('tLink').value      = t.link      || '';
+                    document.getElementById('tDocLink').value   = t.docLink   || '';
                     document.getElementById('tArtDate').value   = t.artDate   || '';
                     document.getElementById('tDevDate').value   = t.devDate   || '';
                     document.getElementById('tTestDate').value  = t.testDate  || '';
@@ -501,6 +512,7 @@
                 owner:      document.getElementById('tOwner').value,
                 group:      document.getElementById('tGroup').value,
                 link:       document.getElementById('tLink').value,
+                docLink:    document.getElementById('tDocLink').value,
                 artDate:    document.getElementById('tArtDate').value,
                 devDate:    document.getElementById('tDevDate').value,
                 testDate:   document.getElementById('tTestDate').value,
