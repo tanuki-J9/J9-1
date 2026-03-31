@@ -383,52 +383,45 @@
 
         function getCalendarEvents() {
             const events = [];
+            const todayStr = new Date().toISOString().split('T')[0];
             tasks.forEach((t, taskIndex) => {
                 const isDone = t.status === '已上线';
-                const createdDate = t.createdDate || t.artDate || t.devDate || t.testDate || t.launchDate;
-                if (!createdDate) return;
-                const endCandidates = [t.artDate, t.devDate, t.testDate, t.launchDate].filter(Boolean);
-                if (!endCandidates.length) return;
+                // 各阶段截止日 + 对应颜色、标签
+                const phases = [
+                    { key: 'artDate',    label: '美术', color: '#3b82f6' },
+                    { key: 'devDate',    label: '开发', color: '#10b981' },
+                    { key: 'testDate',   label: '测试', color: '#8b5cf6' },
+                    { key: 'launchDate', label: '上线', color: '#f59e0b' },
+                ].filter(p => t[p.key]);
 
-                const milestones = [
-                    { date: createdDate,  color: '#ec4899' },
-                    { date: t.artDate,    color: '#3b82f6' },
-                    { date: t.devDate,    color: '#10b981' },
-                    { date: t.testDate,   color: '#f59e0b' },
-                    { date: t.launchDate, color: '#f59e0b' },
-                ].filter(m => m.date);
+                if (!phases.length) return;
 
-                const seen = new Set();
-                const sorted = milestones.filter(m => { if (seen.has(m.date)) return false; seen.add(m.date); return true; })
-                    .sort((a, b) => a.date.localeCompare(b.date));
+                // 按截止日排序
+                phases.sort((a, b) => t[a.key].localeCompare(t[b.key]));
 
-                const segLabels = ['美术', '开发', '测试', '上线'];
-                const segDates  = [t.artDate, t.devDate, t.testDate, t.launchDate];
+                // 起始点：创建日期 或 今天（取较早者）
+                const createdDate = t.createdDate || todayStr;
 
-                for (let i = 0; i < sorted.length; i++) {
-                    const segStart = sorted[i].date;
-                    const finalEnd = i + 1 < sorted.length ? sorted[i + 1].date : dateAddDay(sorted[i].date, 1);
+                phases.forEach((p, i) => {
+                    const segEnd   = t[p.key];                                       // 截止日（含）
+                    const segStart = i === 0 ? createdDate : dateAddDay(t[phases[i - 1].key], 1); // 上一段截止+1天
+                    if (segStart > segEnd) return; // 数据异常则跳过
 
-                    let nodeLabel = '', nodeDate = '';
-                    segDates.forEach((d, idx) => {
-                        if (d && d >= segStart && (!nodeDate || d < nodeDate)) {
-                            nodeDate = d; nodeLabel = segLabels[idx];
-                        }
-                    });
-                    const titleStr = nodeLabel ? `${t.name}（${nodeLabel} ${nodeDate}）` : `${t.name}（${segStart}）`;
+                    const displayEnd = dateAddDay(segEnd, 1); // FullCalendar end 是不含的
+                    const titleStr = `${t.name}（${p.label} ≤${segEnd}）`;
 
                     events.push({
                         id: `${t.id}-${i}`,
                         title: titleStr,
                         start: segStart,
-                        end: finalEnd,
+                        end: displayEnd,
                         allDay: true,
-                        backgroundColor: isDone ? sorted[i].color + '60' : sorted[i].color,
+                        backgroundColor: isDone ? p.color + '60' : p.color,
                         borderColor: 'transparent',
                         order: taskIndex,
                         extendedProps: { taskId: t.id, segIndex: i }
                     });
-                }
+                });
             });
             return events;
         }
