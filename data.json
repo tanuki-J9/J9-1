@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-01T02:30:22.606Z",
+  "updatedAt": "2026-04-01T08:44:24.314Z",
   "tasks": [
     {
       "id": 1774858008073,
@@ -59,7 +59,7 @@
       "id": 1774858246901,
       "name": "高校创作赛导师活动",
       "priority": "P1",
-      "status": "未开始",
+      "status": "排期中",
       "owner": "我",
       "group": "【UGC】乐盒子-运营&策划需求制作沟通群",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612131354959",
@@ -99,6 +99,22 @@
       "launchDate": "2026-04-17",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AVcAOAbwADgCNgAt25xhBR60Ue7yN?scode=AJEAIQdfAAoOMJzFZWAcMAxQaUAPA&tab=BB08J2"
+    },
+    {
+      "id": 1775032000157,
+      "createdDate": "2026-04-01",
+      "name": "五月星企划",
+      "priority": "P1",
+      "status": "排期中",
+      "owner": "我",
+      "group": "",
+      "link": "",
+      "docLink": "",
+      "artDate": "",
+      "devDate": "",
+      "testDate": "",
+      "launchDate": "2026-05-01",
+      "notes": ""
     }
   ]
 }
