@@ -129,7 +129,7 @@
                 <div>
                     <label class="block text-sm font-medium mb-1">当前状态</label>
                     <select id="tStatus" class="w-full border rounded-lg px-3 py-2">
-                        <option value="未开始">未开始</option>
+                        <option value="排期中">排期中</option>
                         <option value="美术中">美术中</option>
                         <option value="开发中">开发中</option>
                         <option value="测试中">测试中</option>
@@ -204,7 +204,7 @@
 
     <script>
         // ── 常量 ────────────────────────────────────────────
-        const COLUMNS = ["未开始", "美术中", "开发中", "测试中", "阻塞中", "已上线"];
+        const COLUMNS = ["排期中", "美术中", "开发中", "测试中", "阻塞中", "已上线"];
 
         // 状态推进顺序映射
         const STATUS_TO_NODE = { '美术中': 'artDate', '开发中': 'devDate', '测试中': 'testDate', '已上线': 'launchDate' };
@@ -385,6 +385,8 @@
             const events = [];
             const todayStr = new Date().toISOString().split('T')[0];
             tasks.forEach((t, taskIndex) => {
+                // 排期中状态不显示在日历进度条
+                if (t.status === '排期中') return;
                 const isDone = t.status === '已上线';
                 // 各阶段截止日 + 对应颜色、标签
                 const phases = [
@@ -573,7 +575,7 @@
             let risks = [];
             const todayTime = new Date(new Date().toISOString().split('T')[0]).getTime();
 
-            const statusNodeStart = { '美术中': 0, '开发中': 1, '测试中': 2, '未开始': 0, '阻塞中': 0 };
+            const statusNodeStart = { '美术中': 0, '开发中': 1, '测试中': 2, '排期中': 0, '阻塞中': 0 };
             const nodes = [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']];
 
             tasks.forEach(t => {
