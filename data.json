@@ -1,11 +1,11 @@
 {
-  "updatedAt": "2026-03-30T11:04:16.473Z",
+  "updatedAt": "2026-04-01T02:30:22.606Z",
   "tasks": [
     {
       "id": 1774858008073,
       "name": "4.1筑梦星计划",
       "priority": "P1",
-      "status": "美术中",
+      "status": "已上线",
       "owner": "我",
       "group": "无",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612132976405",
@@ -14,13 +14,30 @@
       "testDate": "2026-03-31",
       "launchDate": "2026-04-01",
       "notes": "",
-      "docLink": ""
+      "docLink": "",
+      "completedNodes": [
+        {
+          "key": "devDate",
+          "label": "开发",
+          "actual": "2026-03-31"
+        },
+        {
+          "key": "testDate",
+          "label": "测试",
+          "actual": "2026-03-31"
+        },
+        {
+          "key": "launchDate",
+          "label": "上线",
+          "actual": "2026-03-31"
+        }
+      ]
     },
     {
       "id": 1774858134637,
       "name": "4.1造梦星企划",
       "priority": "P1",
-      "status": "测试中",
+      "status": "已上线",
       "owner": "我",
       "group": "【UGC-造梦星企划0201】制作沟通群（基地）",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612132476121",
@@ -29,7 +46,14 @@
       "testDate": "2026-03-31",
       "launchDate": "2026-04-01",
       "notes": "",
-      "docLink": "https://doc.weixin.qq.com/sheet/e3_AcMAxQaUAPACNdoRojb9aQqSQYxy0?scode=AJEAIQdfAAoBoGALYKAcMAxQaUAPA&tab=py35gv"
+      "docLink": "https://doc.weixin.qq.com/sheet/e3_AcMAxQaUAPACNdoRojb9aQqSQYxy0?scode=AJEAIQdfAAoBoGALYKAcMAxQaUAPA&tab=py35gv",
+      "completedNodes": [
+        {
+          "key": "launchDate",
+          "label": "上线",
+          "actual": "2026-04-01"
+        }
+      ]
     },
     {
       "id": 1774858246901,
@@ -42,7 +66,7 @@
       "artDate": "2026-04-17",
       "devDate": "",
       "testDate": "",
-      "launchDate": "2026-08-01",
+      "launchDate": "2026-08-03",
       "notes": "",
       "docLink": "https://doc.weixin.qq.com/sheet/e3_AcMAxQaUAPACN2kxEUFeaTMKzXQ0M?scode=AJEAIQdfAAo9ijmwLUAcMAxQaUAPA&tab=BB08J2"
     },
