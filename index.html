@@ -540,6 +540,23 @@
                 : `<span class="inline-flex items-center text-[11px] px-2 py-1 rounded bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">
                        <span>📄</span><span class="ml-1">活动文档</span></span>`;
 
+            // 已上线：精简折叠卡片
+            if (task.status === '已上线') {
+                return `
+                <div class="bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors relative group kanban-card flex items-center justify-between"
+                     draggable="true" data-id="${task.id}">
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <span class="text-green-500 text-xs flex-none">✅</span>
+                        <span class="text-sm font-medium text-slate-600 truncate">${task.name}</span>
+                        ${task.launchDate ? `<span class="text-[11px] text-slate-400 flex-none">· 🚀 ${task.launchDate}</span>` : ''}
+                    </div>
+                    <div class="flex items-center space-x-1.5 flex-none ml-2">
+                        ${tapdBtn}${docBtn}
+                        <button onclick="openModal(${task.id})" class="text-slate-300 hover:text-blue-500 hidden group-hover:inline z-10 text-xs">✏️</button>
+                    </div>
+                </div>`;
+            }
+
             // 节点完成历史
             const historyHtml = task.completedNodes && task.completedNodes.length
                 ? `<div class="text-[10px] text-slate-400 mt-1 border-t pt-1">${task.completedNodes.map(h => `✓ ${h.label} 实际 ${h.actual}`).join(' · ')}</div>`
