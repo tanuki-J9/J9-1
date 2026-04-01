@@ -543,16 +543,18 @@
             // 已上线：精简折叠卡片
             if (task.status === '已上线') {
                 return `
-                <div class="bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors relative group kanban-card flex items-center justify-between"
+                <div class="bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors relative group kanban-card"
                      draggable="true" data-id="${task.id}">
-                    <div class="flex items-center space-x-2 min-w-0">
-                        <span class="text-green-500 text-xs flex-none">✅</span>
-                        <span class="text-sm font-medium text-slate-600 truncate">${task.name}</span>
-                        ${task.launchDate ? `<span class="text-[11px] text-slate-400 flex-none">· 🚀 ${task.launchDate}</span>` : ''}
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span class="text-green-500 text-xs flex-none">✅</span>
+                            <span class="text-sm font-medium text-slate-700 truncate">${task.name}</span>
+                        </div>
+                        <button onclick="openModal(${task.id})" class="text-slate-300 hover:text-blue-500 hidden group-hover:inline z-10 text-xs flex-none">✏️</button>
                     </div>
-                    <div class="flex items-center space-x-1.5 flex-none ml-2">
+                    <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                        ${task.launchDate ? `<span class="text-[11px] text-slate-400">🚀 ${task.launchDate}</span>` : ''}
                         ${tapdBtn}${docBtn}
-                        <button onclick="openModal(${task.id})" class="text-slate-300 hover:text-blue-500 hidden group-hover:inline z-10 text-xs">✏️</button>
                     </div>
                 </div>`;
             }
