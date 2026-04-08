@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-01T08:44:24.314Z",
+  "updatedAt": "2026-04-08T06:34:00.155Z",
   "tasks": [
     {
       "id": 1774858008073,
@@ -89,7 +89,7 @@
       "id": 1774858346379,
       "name": "2026tga大赛",
       "priority": "P1",
-      "status": "美术中",
+      "status": "开发中",
       "owner": "我",
       "group": "运营活动-【2026tga大赛】需求沟通群",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612130954722",
@@ -98,7 +98,14 @@
       "testDate": "2026-04-16",
       "launchDate": "2026-04-17",
       "notes": "",
-      "docLink": "https://doc.weixin.qq.com/sheet/e3_AVcAOAbwADgCNgAt25xhBR60Ue7yN?scode=AJEAIQdfAAoOMJzFZWAcMAxQaUAPA&tab=BB08J2"
+      "docLink": "https://doc.weixin.qq.com/sheet/e3_AVcAOAbwADgCNgAt25xhBR60Ue7yN?scode=AJEAIQdfAAoOMJzFZWAcMAxQaUAPA&tab=BB08J2",
+      "completedNodes": [
+        {
+          "key": "devDate",
+          "label": "开发",
+          "actual": "2026-04-07"
+        }
+      ]
     },
     {
       "id": 1775032000157,
