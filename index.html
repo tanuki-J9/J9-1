@@ -56,14 +56,18 @@
                 </button>
             </div>
             <div id="memoList" class="flex-1 overflow-y-auto space-y-1.5 mb-3" style="max-height:200px;"></div>
-            <div class="flex space-x-2">
-                <input type="text" id="memoInput" placeholder="新增备忘…按 Enter 或点击添加"
-                    onkeydown="if(event.key==='Enter') addMemo()"
-                    class="flex-1 border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                <button onclick="addMemo()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-                    添加
-                </button>
+            <div class="flex flex-col space-y-1.5">
+                <div class="flex space-x-2">
+                    <input type="text" id="memoInput" placeholder="新增备忘…按 Enter 或点击添加"
+                        onkeydown="if(event.key==='Enter') addMemo()"
+                        class="flex-1 border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="date" id="memoDueDate"
+                        class="border rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-600" title="设置截止日期（选填）">
+                    <button onclick="addMemo()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
+                        添加
+                    </button>
+                </div>
             </div>
         </div>
         <!-- 风险预警 -->
@@ -258,17 +262,25 @@
             const input = document.getElementById('memoInput');
             const text = input.value.trim();
             if (!text) return;
-            memos.unshift({ id: Date.now(), text, done: false });
+            const now = new Date();
+            const createdAt = now.getFullYear() + '-'
+                + String(now.getMonth()+1).padStart(2,'0') + '-'
+                + String(now.getDate()).padStart(2,'0') + ' '
+                + String(now.getHours()).padStart(2,'0') + ':'
+                + String(now.getMinutes()).padStart(2,'0');
+            const dueDate = document.getElementById('memoDueDate').value || null;
+            memos.unshift({ id: Date.now(), text, done: false, createdAt, dueDate });
             input.value = '';
-            saveMemos(); renderMemos();
+            document.getElementById('memoDueDate').value = '';
+            saveMemos(); renderMemos(); updateRiskList();
         }
         function toggleMemoDone(id) {
             const m = memos.find(m => m.id === id);
-            if (m) { m.done = !m.done; saveMemos(); renderMemos(); }
+            if (m) { m.done = !m.done; saveMemos(); renderMemos(); updateRiskList(); }
         }
         function deleteMemo(id) {
             memos = memos.filter(m => m.id !== id);
-            saveMemos(); renderMemos();
+            saveMemos(); renderMemos(); updateRiskList();
         }
         function toggleDoneMemos() {
             showDoneMemos = !showDoneMemos;
@@ -279,17 +291,36 @@
             const list = document.getElementById('memoList');
             const visible = memos.filter(m => showDoneMemos || !m.done);
             if (!visible.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">暂无备忘</p>'; return; }
-            list.innerHTML = visible.map(m => `
-                <div class="flex items-center space-x-2 group px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+            const todayStr = new Date().toISOString().split('T')[0];
+            list.innerHTML = visible.map(m => {
+                const todayTime = new Date(todayStr).getTime();
+                let dueBadge = '';
+                if (m.dueDate && !m.done) {
+                    const diff = Math.round((new Date(m.dueDate).getTime() - todayTime) / 86400000);
+                    if (diff < 0)
+                        dueBadge = `<span class="text-[10px] bg-red-100 text-red-600 rounded px-1 py-0.5 whitespace-nowrap">逾期${Math.abs(diff)}天</span>`;
+                    else if (diff <= 3)
+                        dueBadge = `<span class="text-[10px] bg-orange-100 text-orange-600 rounded px-1 py-0.5 whitespace-nowrap">截止${m.dueDate}（剩${diff}天）</span>`;
+                    else
+                        dueBadge = `<span class="text-[10px] bg-slate-100 text-slate-400 rounded px-1 py-0.5 whitespace-nowrap">${m.dueDate}</span>`;
+                }
+                return `
+                <div class="flex items-start space-x-2 group px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
                     <button onclick="toggleMemoDone(${m.id})"
-                        class="flex-none w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
+                        class="flex-none w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mt-0.5
                                ${m.done ? 'bg-green-500 border-green-500 text-white' : 'border-slate-300 hover:border-green-400'}">
                         ${m.done ? '<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
                     </button>
-                    <span class="flex-1 text-sm ${m.done ? 'line-through text-slate-400 font-normal' : 'text-red-600 font-bold'}">${m.text}</span>
-                    <button onclick="deleteMemo(${m.id})" class="flex-none text-slate-200 hover:text-red-400 hidden group-hover:block text-xs">✕</button>
-                </div>
-            `).join('');
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-sm ${m.done ? 'line-through text-slate-400 font-normal' : 'text-red-600 font-bold'}">${m.text}</span>
+                            ${dueBadge}
+                        </div>
+                        ${m.createdAt ? `<div class="text-[10px] text-slate-300 mt-0.5">${m.createdAt}</div>` : ''}
+                    </div>
+                    <button onclick="deleteMemo(${m.id})" class="flex-none text-slate-200 hover:text-red-400 hidden group-hover:block text-xs mt-0.5">✕</button>
+                </div>`;
+            }).join('');
         }
 
         // ── GitHub 同步 ──────────────────────────────────────
@@ -594,6 +625,7 @@
             let risks = [];
             const todayTime = new Date(new Date().toISOString().split('T')[0]).getTime();
 
+            // 工作项节点预警
             const statusNodeStart = { '美术中': 0, '开发中': 1, '测试中': 2, '排期中': 0, '阻塞中': 0 };
             const nodes = [['artDate','美术'],['devDate','开发'],['testDate','测试'],['launchDate','上线']];
 
@@ -605,12 +637,25 @@
                     if (!t[key]) return;
                     const diff = Math.round((new Date(t[key]).getTime() - todayTime) / 86400000);
                     let c;
-                    if (diff < 0)      c = { task: t.name, type: label, color: 'text-red-600 bg-red-50 border-red-200',         msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 1000 };
-                    else if (diff <= 3) c = { task: t.name, type: label, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diff} 天`,             score: 3 - diff };
+                    if (diff < 0)      c = { task: t.name, type: label, color: 'text-red-600 bg-red-50 border-red-200',         msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 1000, kind: 'task' };
+                    else if (diff <= 3) c = { task: t.name, type: label, color: 'text-orange-600 bg-orange-50 border-orange-200', msg: `剩 ${diff} 天`,             score: 3 - diff,       kind: 'task' };
                     if (c && (!worst || c.score > worst.score)) worst = c;
                 });
                 if (worst) risks.push(worst);
             });
+
+            // 备忘录截止日预警
+            memos.forEach(m => {
+                if (m.done || !m.dueDate) return;
+                const diff = Math.round((new Date(m.dueDate).getTime() - todayTime) / 86400000);
+                if (diff < 0)
+                    risks.push({ task: m.text, type: '备忘', color: 'text-red-600 bg-red-50 border-red-200',         msg: `逾期 ${Math.abs(diff)} 天`, score: -diff + 2000, kind: 'memo' });
+                else if (diff <= 3)
+                    risks.push({ task: m.text, type: '备忘', color: 'text-purple-600 bg-purple-50 border-purple-200', msg: `剩 ${diff} 天`,             score: 3 - diff + 500, kind: 'memo' });
+            });
+
+            // 按 score 降序
+            risks.sort((a, b) => b.score - a.score);
 
             if (!risks.length) {
                 riskContainer.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4">✅ 近三天节点安全</p>';
