@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-16T07:06:22.502Z",
+  "updatedAt": "2026-04-20T02:32:55.279Z",
   "tasks": [
     {
       "id": 1774858008073,
@@ -89,7 +89,7 @@
       "id": 1774858346379,
       "name": "2026tga大赛",
       "priority": "P1",
-      "status": "测试中",
+      "status": "已上线",
       "owner": "我",
       "group": "运营活动-【2026tga大赛】需求沟通群",
       "link": "https://tapd.woa.com/tapd_fe/20427612/story/detail/1020427612130954722",
@@ -109,6 +109,11 @@
           "key": "testDate",
           "label": "测试",
           "actual": "2026-04-13"
+        },
+        {
+          "key": "launchDate",
+          "label": "上线",
+          "actual": "2026-04-17"
         }
       ]
     },
