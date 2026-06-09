@@ -206,6 +206,10 @@
                     <label class="block text-sm font-medium mb-1">备注</label>
                     <textarea id="tNotes" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea>
                 </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium mb-1">📌 当前备注 <span class="text-slate-400 font-normal text-xs">（外显在卡片上）</span></label>
+                    <input type="text" id="tCurrentNote" class="w-full border rounded-lg px-3 py-2" placeholder="卡片上直接显示的备注…">
+                </div>
                 <div class="col-span-2 flex justify-between items-center mt-2">
                     <button type="button" id="deleteBtn" onclick="deleteTask()" class="text-red-500 hover:text-red-700 hidden text-sm font-medium">删除此任务</button>
                     <div class="flex space-x-3 ml-auto">
@@ -666,11 +670,11 @@
                         ${tapdBtn}${docBtn}
                     </div>
                     <input type="text"
-                        value="${(task.notes||'').replace(/"/g,'&quot;')}"
-                        placeholder="备注…"
+                        value="${(task.currentNote||'').replace(/"/g,'&quot;')}"
+                        placeholder="当前备注…"
                         onclick="event.stopPropagation()"
                         onkeydown="if(event.key==='Enter'){this.blur();}"
-                        onblur="updateNotes(${task.id}, this.value)"
+                        onblur="updateCurrentNote(${task.id}, this.value)"
                         class="mt-2 w-full text-[11px] text-slate-500 placeholder-slate-300 bg-transparent border-b border-dashed border-slate-300 focus:border-slate-400 focus:text-slate-700 outline-none px-0.5 py-0.5 transition-colors">
                 </div>`;
             }
@@ -702,22 +706,22 @@
                     </div>
                     ${historyHtml}
                     <input type="text"
-                        value="${(task.notes||'').replace(/"/g,'&quot;')}"
-                        placeholder="备注…"
+                        value="${(task.currentNote||'').replace(/"/g,'&quot;')}"
+                        placeholder="当前备注…"
                         onclick="event.stopPropagation()"
                         onkeydown="if(event.key==='Enter'){this.blur();}"
-                        onblur="updateNotes(${task.id}, this.value)"
+                        onblur="updateCurrentNote(${task.id}, this.value)"
                         class="mt-2 w-full text-[11px] text-slate-500 placeholder-slate-300 bg-transparent border-b border-dashed border-slate-300 focus:border-slate-400 focus:text-slate-700 outline-none px-0.5 py-0.5 transition-colors">
                 </div>`;
         }
 
-        // ── 备注内联编辑 ─────────────────────────────────────
-        function updateNotes(id, val) {
+        // ── 当前备注内联编辑 ───────────────────────────────────
+        function updateCurrentNote(id, val) {
             const task = tasks.find(t => t.id === id);
             if (!task) return;
             const newVal = val.trim();
-            if (task.notes === newVal) return; // 没改变就不触发保存
-            task.notes = newVal;
+            if (task.currentNote === newVal) return;
+            task.currentNote = newVal;
             saveAndSync();
         }
 
@@ -833,7 +837,8 @@
                     document.getElementById('tDevDate').value         = t.devDate    || '';
                     document.getElementById('tTestDate').value        = t.testDate   || '';
                     document.getElementById('tLaunchDate').value      = t.launchDate || '';
-                    document.getElementById('tNotes').value           = t.notes      || '';
+                    document.getElementById('tNotes').value           = t.notes       || '';
+                    document.getElementById('tCurrentNote').value      = t.currentNote || '';
                     document.getElementById('deleteBtn').classList.remove('hidden');
                     // 重新触发节假日检查
                     ['tArtDate','tDevDate','tTestDate','tLaunchDate'].forEach((fId, i) => {
@@ -865,6 +870,7 @@
                 testDate:   document.getElementById('tTestDate').value,
                 launchDate: document.getElementById('tLaunchDate').value,
                 notes:      document.getElementById('tNotes').value,
+                currentNote: document.getElementById('tCurrentNote').value,
             };
             if (editId) {
                 const idx = tasks.findIndex(t => t.id == editId);
